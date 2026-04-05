@@ -2,6 +2,66 @@
   {
     "executable": "mock_simulation.bat",
     "start_time": 0,
+    "stop_time": 5,
+    "status": "Success",
+    "duration": 2.8377833999693394,
+    "timestamp": "2026-04-05 18:24",
+    "return_code": 0,
+    "output_file": "D:\\spppp\\simulation_results.csv"
+  },
+  {
+    "executable": "mock_simulation.bat",
+    "start_time": 0,
+    "stop_time": 4,
+    "status": "Success",
+    "duration": 2.8523327000439167,
+    "timestamp": "2026-04-05 18:24",
+    "return_code": 0,
+    "output_file": "D:\\spppp\\simulation_results.csv"
+  },
+  {
+    "executable": "mock_simulation.bat",
+    "start_time": 0,
+    "stop_time": 4,
+    "status": "Success",
+    "duration": 2.8107073000865057,
+    "timestamp": "2026-04-05 18:09",
+    "return_code": 0,
+    "output_file": "D:\\spppp\\simulation_results.csv"
+  },
+  {
+    "executable": "mock_simulation.bat",
+    "start_time": 0,
+    "stop_time": 4,
+    "status": "Success",
+    "duration": 2.9086709999246523,
+    "timestamp": "2026-04-05 18:06",
+    "return_code": 0,
+    "output_file": "D:\\spppp\\simulation_results.csv"
+  },
+  {
+    "executable": "mock_simulation.bat",
+    "start_time": 0,
+    "stop_time": 4,
+    "status": "Success",
+    "duration": 2.898719499935396,
+    "timestamp": "2026-04-05 18:06",
+    "return_code": 0,
+    "output_file": "D:\\spppp\\simulation_results.csv"
+  },
+  {
+    "executable": "mock_simulation.bat",
+    "start_time": 0,
+    "stop_time": 4,
+    "status": "Success",
+    "duration": 3.446616300032474,
+    "timestamp": "2026-04-05 17:48",
+    "return_code": 0,
+    "output_file": "D:\\spppp\\simulation_results.csv"
+  },
+  {
+    "executable": "mock_simulation.bat",
+    "start_time": 0,
     "stop_time": 4,
     "status": "Success",
     "duration": 2.771776400040835,

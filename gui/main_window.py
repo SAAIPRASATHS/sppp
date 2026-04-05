@@ -1,9 +1,9 @@
 """
-Main window UI for the OpenModelica Simulation Studio v4.0.
+Main window UI for the OpenModelica Simulation Studio v5.0.
 
 Professional-grade Workspace UI with resizable panels, terminal console,
-real-time simulation results, and data inspector. Inspired by VS Code
-and MATLAB desktop environments.
+real-time simulation results, and data inspector. Features seamless
+dual-theme (dark/light) switching via ThemeManager.
 """
 
 import json
@@ -38,7 +38,7 @@ from core.simulation_runner import SimulationRunner
 from core.sweep_runner import SweepRunner, SweepRunResult
 from core.validator import SimulationValidator
 
-from gui.styles import DARK_THEME, LIGHT_THEME
+from gui.theme_manager import ThemeManager
 from gui.compare_view import CompareView
 from utils.file_handler import select_executable, inspect_file, FileInfo
 
@@ -47,13 +47,13 @@ _SETTINGS_FILE = Path(__file__).resolve().parent.parent / ".sim_settings.json"
 
 
 class MainWindow(QMainWindow):
-    """Primary application window for Simulation Studio (v4.0).
+    """Primary application window for Simulation Studio (v5.0).
 
     Multi-panel Layout:
     - Sidebar (Left): Control & Setup
     - Workspace (Center): Visualization & Terminal
     - Inspector (Right): Details & Status
-    - Toolbar (Top): Action items
+    - Toolbar (Top): Action items + Theme toggle
     """
 
     def __init__(self) -> None:
@@ -62,17 +62,19 @@ class MainWindow(QMainWindow):
         self._sweep_runner = None
         self._logger = SimulationLogger()
         self._exe_path = ""
-        self._is_dark_mode = True  # Default to Studio Dark mode
         self._last_elapsed = 0.0
         self._last_csv_path = ""
+
+        # Theme Manager
+        self._theme_mgr = ThemeManager(parent=self)
 
         # Managers
         self._history_mgr = HistoryManager()
         self._report_gen = ReportGenerator()
 
         self._init_ui()
-        self._apply_theme()
         self._load_settings()
+        self._apply_theme()
         self._update_status("Ready", "#3fb950")
 
     def _init_ui(self) -> None:
@@ -80,10 +82,10 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Simulation Studio \u2014 OpenModelica")
         self.setMinimumSize(QSize(1200, 800))
 
-        # -- Core Panels --
+        # -- Core Panels (pass theme_mgr to plot panel) --
         self._control_panel = ControlPanel()
         self._console_panel = ConsolePanel()
-        self._plot_panel = PlotPanel()
+        self._plot_panel = PlotPanel(self._theme_mgr)
         self._inspector_panel = InspectorPanel()
         self._history_panel = HistoryPanel(self._history_mgr)
 
@@ -159,7 +161,8 @@ class MainWindow(QMainWindow):
         toolbar.addSeparator()
 
         # Dark/Light Toggle
-        self._theme_act = QAction("\U0001f319 Theme", self)
+        self._theme_act = QAction("\U0001f319 Dark", self)
+        self._theme_act.setToolTip("Toggle between Dark and Light themes")
         self._theme_act.triggered.connect(self._toggle_theme)
         toolbar.addAction(self._theme_act)
 
@@ -201,9 +204,7 @@ class MainWindow(QMainWindow):
 
     def _on_run_requested_toolbar(self) -> None:
         """Triggered from toolbar Run button."""
-        # This calls the internal logic of the ControlPanel to emit runClicked
-        # We access the internal start/stop spinboxes indirectly or trigger the logic
-        self._control_panel._run_btn.click() # Cleanest way to trigger sidebar behavior
+        self._control_panel._run_btn.click()
 
     def _on_demo_requested(self) -> None:
         if not self._exe_path:
@@ -295,7 +296,6 @@ class MainWindow(QMainWindow):
 
     def _on_sweep_run_completed(self, result: SweepRunResult) -> None:
         self._log(f"Sweep run {result.index+1} finished: {result.status}", LogLevel.INFO)
-        # Update history as we go
         self._history_mgr.add(
             executable=Path(self._exe_path).name,
             start_time=result.start_time,
@@ -316,10 +316,13 @@ class MainWindow(QMainWindow):
 
     def _on_compare_requested(self) -> None:
         """Launch the Compare runs dialog/view."""
-        view = CompareView(self._history_mgr)
-        view.setWindowTitle("Compare Studio")
-        view.resize(1000, 600)
-        view.show()
+        self._compare_view = CompareView(self._history_mgr, self._theme_mgr)
+        self._compare_view.setWindowTitle("Compare Studio")
+        self._compare_view.resize(1000, 600)
+        # Apply current theme to the new window
+        self._compare_view.setStyleSheet(self._theme_mgr.get_qss())
+        self._compare_view.refresh_runs()
+        self._compare_view.show()
 
     def _scan_and_plot_latest(self) -> None:
         if not self._exe_path: return
@@ -340,15 +343,20 @@ class MainWindow(QMainWindow):
     # -- System -----------------------------------------------------
 
     def _apply_theme(self) -> None:
-        theme = DARK_THEME if self._is_dark_mode else LIGHT_THEME
-        self.setStyleSheet(theme)
-        # Update plot panel theme by proxy
-        self._plot_panel.reset()
+        """Apply the current theme to the window and update UI text."""
+        self._theme_mgr.apply(self)
+        # Update the toolbar toggle text
+        if self._theme_mgr.is_dark():
+            self._theme_act.setText("\U0001f319 Dark")
+        else:
+            self._theme_act.setText("\u2600\ufe0f Light")
 
     def _toggle_theme(self) -> None:
-        self._is_dark_mode = not self._is_dark_mode
+        """Toggle between dark and light themes."""
+        self._theme_mgr.toggle()
         self._apply_theme()
-        self._log(f"Switched theme ({'Dark' if self._is_dark_mode else 'Light'})", LogLevel.INFO)
+        self._log(f"Theme: {'Dark' if self._theme_mgr.is_dark() else 'Light'} mode", LogLevel.INFO)
+        self._save_settings()
 
     def _set_running_state(self, running: bool) -> None:
         self._run_act.setEnabled(not running)
@@ -357,14 +365,19 @@ class MainWindow(QMainWindow):
 
     def _update_status(self, text: str, color: str = None) -> None:
         self._status_label.setText(text)
+        # Status bar text is always white per QSS, so inline color
+        # only for the widget-specific label when needed
         if color:
-            self._status_label.setStyleSheet(f"color: {color};")
+            self._status_label.setStyleSheet(f"color: {color}; background: transparent;")
 
     def _log(self, text: str, level: LogLevel) -> None:
         self._console_panel.append_text(self._logger.log(text, level))
 
     def _save_settings(self) -> None:
-        data = {"exe_path": self._exe_path, "dark_mode": self._is_dark_mode}
+        data = {
+            "exe_path": self._exe_path,
+            "theme": self._theme_mgr.current_theme,
+        }
         try:
             _SETTINGS_FILE.write_text(json.dumps(data, indent=2))
         except OSError: pass
@@ -377,6 +390,9 @@ class MainWindow(QMainWindow):
             if path and Path(path).exists():
                 self._exe_path = path
                 self._control_panel.update_exe_path(path)
-            self._is_dark_mode = data.get("dark_mode", True)
-            self._apply_theme()
+            theme = data.get("theme", "dark")
+            # Also support legacy "dark_mode" boolean key
+            if "dark_mode" in data and "theme" not in data:
+                theme = "dark" if data["dark_mode"] else "light"
+            self._theme_mgr.switch_theme(theme)
         except (json.JSONDecodeError, OSError): pass

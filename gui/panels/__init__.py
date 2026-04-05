@@ -1,1 +1,1 @@
-਍
+# GUI panels package

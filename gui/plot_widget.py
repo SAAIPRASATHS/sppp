@@ -2,7 +2,7 @@
 Matplotlib-based plot widget for displaying simulation results.
 
 Embeds a matplotlib figure inside a PyQt6 widget with column
-selection, zoom/pan toolbar, and theme-aware styling.
+selection, zoom/pan toolbar, and theme-aware styling via ThemeManager.
 """
 
 from matplotlib.backends.backend_qtagg import (
@@ -13,7 +13,6 @@ from matplotlib.figure import Figure
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
-    QApplication,
     QComboBox,
     QHBoxLayout,
     QLabel,
@@ -32,39 +31,29 @@ _PLOT_COLORS = [
 ]
 
 
-def _get_theme_colors() -> dict[str, str]:
-    """Detect current theme from the application and return plot colors.
+def get_plot_colors_from_theme_mgr(theme_mgr) -> dict[str, str]:
+    """Get plot colors from ThemeManager if available.
 
-    Returns a dict with keys: bg, card, grid, text, text_dim, border, title.
+    Args:
+        theme_mgr: A ThemeManager instance, or None.
+
+    Returns:
+        Dict of color tokens for matplotlib styling.
     """
-    app = QApplication.instance()
-    if app:
-        ss = app.activeWindow()
-        if ss:
-            bg_color = ss.palette().color(ss.backgroundRole())
-            lightness = bg_color.lightnessF()
-            if lightness > 0.5:
-                # Light theme
-                return {
-                    "bg": "#ffffff",
-                    "card": "#f6f8fa",
-                    "grid": "#d0d7de",
-                    "text": "#1f2328",
-                    "text_dim": "#656d76",
-                    "border": "#d0d7de",
-                    "title": "#1f2328",
-                    "marker_bg": "#ffffff",
-                }
-    # Dark theme (default)
+    if theme_mgr is not None:
+        return theme_mgr.get_plot_colors()
+    # Fallback dark colors
     return {
-        "bg": "#0d1117",
-        "card": "#161b22",
-        "grid": "#21262d",
-        "text": "#c9d1d9",
-        "text_dim": "#8b949e",
-        "border": "#30363d",
-        "title": "#f0f6fc",
-        "marker_bg": "#0d1117",
+        "bg": "#1E1E1E",
+        "card": "#252526",
+        "grid": "#333333",
+        "text": "#C5C5C5",
+        "text_dim": "#969696",
+        "border": "#444444",
+        "title": "#FFFFFF",
+        "marker_bg": "#1E1E1E",
+        "accent": "#007ACC",
+        "line": "#58A6FF",
     }
 
 
@@ -72,14 +61,19 @@ class PlotWidget(QWidget):
     """Embeddable matplotlib plot with column selection controls.
 
     Displays simulation CSV data as line charts with an interactive
-    toolbar for zoom, pan, and save. Auto-detects theme.
+    toolbar for zoom, pan, and save. Uses ThemeManager for colors.
     """
 
-    def __init__(self, parent: QWidget | None = None):
+    def __init__(self, theme_mgr=None, parent: QWidget | None = None):
         super().__init__(parent)
+        self._theme_mgr = theme_mgr
         self._preview: CsvPreview | None = None
         self._numeric_cols: list[str] = []
         self._init_ui()
+
+    def _get_colors(self) -> dict[str, str]:
+        """Get the current theme colors."""
+        return get_plot_colors_from_theme_mgr(self._theme_mgr)
 
     def _init_ui(self) -> None:
         """Build the plot layout with controls and canvas."""
@@ -131,7 +125,7 @@ class PlotWidget(QWidget):
         layout.addWidget(controls)
 
         # -- Matplotlib Figure --
-        tc = _get_theme_colors()
+        tc = self._get_colors()
         self._figure = Figure(figsize=(6, 3.5), dpi=100)
         self._figure.patch.set_facecolor(tc["bg"])
         self._canvas = FigureCanvas(self._figure)
@@ -169,9 +163,9 @@ class PlotWidget(QWidget):
         self._y_combo.addItems(self._numeric_cols)
 
         # Auto-select "time" for X if available
-        for tc in ("time", "Time", "TIME", "t"):
-            if tc in self._numeric_cols:
-                self._x_combo.setCurrentIndex(self._numeric_cols.index(tc))
+        for tc_name in ("time", "Time", "TIME", "t"):
+            if tc_name in self._numeric_cols:
+                self._x_combo.setCurrentIndex(self._numeric_cols.index(tc_name))
                 break
 
         # Y defaults to second column
@@ -190,7 +184,7 @@ class PlotWidget(QWidget):
 
     def _show_no_data_message(self) -> None:
         """Display a styled message on the canvas when no numeric data."""
-        tc = _get_theme_colors()
+        tc = self._get_colors()
         self._figure.clear()
         ax = self._figure.add_subplot(111)
         ax.set_facecolor(tc["bg"])
@@ -241,7 +235,7 @@ class PlotWidget(QWidget):
         y_data = y_data[:min_len]
 
         # -- Theme-aware Draw --
-        tc = _get_theme_colors()
+        tc = self._get_colors()
         self._figure.clear()
         self._figure.patch.set_facecolor(tc["bg"])
         ax = self._figure.add_subplot(111)
@@ -258,13 +252,15 @@ class PlotWidget(QWidget):
             linewidth=0.6, alpha=0.8
         )
 
+        line_color = tc.get("line", _PLOT_COLORS[0])
+
         ax.plot(
             x_data, y_data,
-            color=_PLOT_COLORS[0],
+            color=line_color,
             linewidth=2.0,
             marker="o",
             markersize=3,
-            markeredgecolor=_PLOT_COLORS[0],
+            markeredgecolor=line_color,
             markerfacecolor=tc["marker_bg"],
             alpha=0.95,
             label=y_col,
@@ -273,7 +269,7 @@ class PlotWidget(QWidget):
         ax.fill_between(
             x_data, y_data,
             alpha=0.08,
-            color=_PLOT_COLORS[0],
+            color=line_color,
         )
 
         ax.set_xlabel(x_col, fontsize=11, fontweight="bold")
@@ -299,7 +295,7 @@ class PlotWidget(QWidget):
 
     def _on_clear(self) -> None:
         """Clear the current plot."""
-        tc = _get_theme_colors()
+        tc = self._get_colors()
         self._figure.clear()
         self._figure.patch.set_facecolor(tc["bg"])
         self._canvas.draw()

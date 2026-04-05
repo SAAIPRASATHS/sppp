@@ -3,7 +3,7 @@ Compare Runs view for side-by-side simulation result analysis.
 
 Provides a UI to select multiple historical simulation runs and
 overlay their outputs on a single matplotlib graph for comparison.
-Uses distinct colors and labels for clarity. Theme-aware.
+Uses distinct colors and labels for clarity. Theme-aware via ThemeManager.
 """
 
 from pathlib import Path
@@ -14,7 +14,7 @@ from matplotlib.backends.backend_qtagg import (
 )
 from matplotlib.figure import Figure
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QSize
 from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -37,7 +37,7 @@ from core.result_parser import (
     get_numeric_columns,
     parse_csv_preview,
 )
-from gui.plot_widget import _get_theme_colors
+from gui.theme_manager import ThemeManager
 
 # Premium plot color palette (12 distinct colors)
 _COMPARE_COLORS = [
@@ -55,24 +55,44 @@ class CompareView(QWidget):
     - Shared X/Y axis column selectors
     - Overlay plot with distinct colors and clear legend
     - Refresh and clear controls
-    - Theme-aware matplotlib styling
+    - Theme-aware matplotlib styling via ThemeManager
     """
 
     def __init__(
         self,
         history_manager: HistoryManager,
+        theme_mgr: ThemeManager | None = None,
         parent: QWidget | None = None,
     ):
         """Initialize the compare view.
 
         Args:
             history_manager: Shared HistoryManager for accessing run data.
+            theme_mgr: Optional ThemeManager for plot colors.
             parent: Optional parent widget.
         """
         super().__init__(parent)
         self._history_mgr = history_manager
+        self._theme_mgr = theme_mgr
         self._loaded_previews: dict[int, CsvPreview] = {}
         self._init_ui()
+
+    def _get_colors(self) -> dict[str, str]:
+        """Get the current plot colors from ThemeManager."""
+        if self._theme_mgr:
+            return self._theme_mgr.get_plot_colors()
+        return {
+            "bg": "#1E1E1E",
+            "card": "#252526",
+            "grid": "#333333",
+            "text": "#C5C5C5",
+            "text_dim": "#969696",
+            "border": "#444444",
+            "title": "#FFFFFF",
+            "marker_bg": "#1E1E1E",
+            "accent": "#007ACC",
+            "line": "#58A6FF",
+        }
 
     def _init_ui(self) -> None:
         """Build the compare view layout."""
@@ -178,7 +198,7 @@ class CompareView(QWidget):
         right_layout.addWidget(controls)
 
         # -- Matplotlib Figure --
-        tc = _get_theme_colors()
+        tc = self._get_colors()
         self._figure = Figure(figsize=(7, 4), dpi=100)
         self._figure.patch.set_facecolor(tc["bg"])
         self._canvas = FigureCanvas(self._figure)
@@ -246,7 +266,11 @@ class CompareView(QWidget):
 
             checkbox = QCheckBox(label)
             checkbox.setObjectName("compareCheckbox")
-            item.setSizeHint(checkbox.sizeHint())
+            checkbox.setStyleSheet("padding: 2px 5px;")
+            
+            # Ensure the row is tall enough for the text
+            sh = checkbox.sizeHint()
+            item.setSizeHint(QSize(sh.width(), sh.height() + 10))
 
             self._run_list.addItem(item)
             self._run_list.setItemWidget(item, checkbox)
@@ -330,7 +354,7 @@ class CompareView(QWidget):
             return
 
         # -- Theme-aware Draw --
-        tc = _get_theme_colors()
+        tc = self._get_colors()
         self._figure.clear()
         self._figure.patch.set_facecolor(tc["bg"])
         ax = self._figure.add_subplot(111)
@@ -424,7 +448,7 @@ class CompareView(QWidget):
 
     def _on_clear(self) -> None:
         """Clear the comparison plot."""
-        tc = _get_theme_colors()
+        tc = self._get_colors()
         self._figure.clear()
         self._figure.patch.set_facecolor(tc["bg"])
         self._canvas.draw()

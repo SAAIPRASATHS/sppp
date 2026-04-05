@@ -1,7 +1,7 @@
 """
 Central workspace for simulation visualization.
-Matplotlib-based plot area with theme-aware styling.
-VS Code-themed toolbar and canvas.
+Matplotlib-based plot area with theme-reactive styling.
+Automatically redraws when the theme is switched.
 """
 
 from matplotlib.backends.backend_qtagg import (
@@ -21,18 +21,22 @@ from PyQt6.QtWidgets import (
 )
 
 from core.result_parser import CsvPreview, get_numeric_columns, get_column_data
-from gui.plot_widget import _get_theme_colors
+from gui.theme_manager import ThemeManager
 
 
 class PlotPanel(QWidget):
-    """Main visualization workspace."""
+    """Main visualization workspace with theme-reactive matplotlib plots."""
 
     plotRequested = pyqtSignal(str, str)  # (x_col, y_col)
 
-    def __init__(self, parent: QWidget | None = None):
+    def __init__(self, theme_mgr: ThemeManager, parent: QWidget | None = None):
         super().__init__(parent)
+        self._theme_mgr = theme_mgr
         self._preview: CsvPreview | None = None
         self._init_ui()
+
+        # React to theme changes
+        self._theme_mgr.themeChanged.connect(self._on_theme_changed)
 
     def _init_ui(self) -> None:
         """Construct the plot layout with workspace controls and canvas."""
@@ -82,7 +86,7 @@ class PlotPanel(QWidget):
         self._display_layout.setContentsMargins(0, 0, 0, 0)
 
         # Matplotlib Canvas
-        tc = _get_theme_colors()
+        tc = self._theme_mgr.get_plot_colors()
         self._figure = Figure(figsize=(5, 4), dpi=100)
         self._figure.patch.set_facecolor(tc["bg"])
         self._canvas = FigureCanvas(self._figure)
@@ -154,7 +158,7 @@ class PlotPanel(QWidget):
         x_data = x_data[:min_len]
         y_data = y_data[:min_len]
 
-        tc = _get_theme_colors()
+        tc = self._theme_mgr.get_plot_colors()
         self._figure.clear()
         self._figure.patch.set_facecolor(tc["bg"])
         ax = self._figure.add_subplot(111)
@@ -170,14 +174,18 @@ class PlotPanel(QWidget):
         
         ax.grid(True, color=tc["grid"], linestyle="--", linewidth=0.5, alpha=0.6)
 
-        color = "#007acc" if tc["bg"] == "#1e1e1e" else "#0969da" # IDE Blue
+        line_color = tc["line"]
 
-        ax.plot(x_data, y_data, color=color, linewidth=1.5, label=y_col)
-        ax.fill_between(x_data, y_data, alpha=0.08, color=color)
+        ax.plot(x_data, y_data, color=line_color, linewidth=1.8, label=y_col,
+                marker="o", markersize=2, markeredgecolor=line_color,
+                markerfacecolor=tc["marker_bg"], alpha=0.95)
+        ax.fill_between(x_data, y_data, alpha=0.08, color=line_color)
 
         ax.set_xlabel(x_col, fontsize=10, fontweight="bold")
         ax.set_ylabel(y_col, fontsize=10, fontweight="bold")
-        ax.legend(facecolor=tc["card"], edgecolor=tc["border"], labelcolor=tc["text"], loc="best", fontsize=8)
+        ax.set_title(f"{y_col}  vs  {x_col}", fontsize=12, fontweight="bold", pad=10)
+        ax.legend(facecolor=tc["card"], edgecolor=tc["border"],
+                  labelcolor=tc["text"], loc="best", fontsize=8, framealpha=0.9)
 
         self._figure.tight_layout(pad=1.2)
         self._canvas.draw()
@@ -185,6 +193,16 @@ class PlotPanel(QWidget):
     def _on_plot_click(self) -> None:
         """Handle context plot click."""
         self.draw_plot(self._x_combo.currentText(), self._y_combo.currentText())
+
+    def _on_theme_changed(self, theme: str) -> None:
+        """Redraw the plot when the theme changes."""
+        if self._preview and self._canvas.isVisible():
+            self.draw_plot(self._x_combo.currentText(), self._y_combo.currentText())
+        else:
+            # Update placeholder / empty canvas background
+            tc = self._theme_mgr.get_plot_colors()
+            self._figure.patch.set_facecolor(tc["bg"])
+            self._canvas.draw()
 
     def reset(self) -> None:
         """Clear the plot and show placeholder."""
