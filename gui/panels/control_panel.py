@@ -31,6 +31,8 @@ class ControlPanel(QWidget):
     demoClicked = pyqtSignal()
     sweepClicked = pyqtSignal(int, list) # (start, stops)
     browseClicked = pyqtSignal()
+    saveConfigRequested = pyqtSignal()
+    loadConfigRequested = pyqtSignal()
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
@@ -70,6 +72,20 @@ class ControlPanel(QWidget):
         
         setup_layout.addRow(QLabel("Start:"), self._start_input)
         setup_layout.addRow(QLabel("Stop:"), self._stop_input)
+        
+        # Config Buttons
+        config_row = QHBoxLayout()
+        self._save_config_btn = QPushButton("\U0001f4be Save Config")
+        self._save_config_btn.setObjectName("sidebarConfigBtn")
+        self._save_config_btn.clicked.connect(self.saveConfigRequested.emit)
+        
+        self._load_config_btn = QPushButton("\U0001f4c2 Load Config")
+        self._load_config_btn.setObjectName("sidebarConfigBtn")
+        self._load_config_btn.clicked.connect(self.loadConfigRequested.emit)
+        
+        config_row.addWidget(self._save_config_btn)
+        config_row.addWidget(self._load_config_btn)
+        setup_layout.addRow(config_row)
         
         self._run_btn = QPushButton("\u25b6  Run Simulation")
         self._run_btn.setObjectName("sidebarRunBtn")
@@ -144,6 +160,18 @@ class ControlPanel(QWidget):
         except ValueError:
             pass
 
+    def get_form_values(self) -> dict:
+        """Return the current form configuration as a dictionary."""
+        return {
+            "start_time": self._start_input.value(),
+            "stop_time": self._stop_input.value()
+        }
+
+    def set_form_values(self, start: int, stop: int) -> None:
+        """Update the configuration values in the setup form."""
+        self._start_input.setValue(start)
+        self._stop_input.setValue(stop)
+
     def _on_sweep_toggle(self, checked: bool) -> None:
         """Toggle collapsible sweep section visibility."""
         self._sweep_content.setVisible(checked)
@@ -157,3 +185,5 @@ class ControlPanel(QWidget):
         self._start_input.setEnabled(not is_running)
         self._stop_input.setEnabled(not is_running)
         self._sweep_stops_input.setEnabled(not is_running)
+        self._save_config_btn.setEnabled(not is_running)
+        self._load_config_btn.setEnabled(not is_running)

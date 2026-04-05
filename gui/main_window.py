@@ -20,6 +20,7 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QWidget,
     QLabel,
+    QFileDialog,
 )
 
 # Panels
@@ -37,6 +38,10 @@ from core.result_parser import scan_result_files, parse_csv_preview
 from core.simulation_runner import SimulationRunner
 from core.sweep_runner import SweepRunner, SweepRunResult
 from core.validator import SimulationValidator
+
+from core.export_manager import ExportManager
+from core.config_manager import ConfigManager, SimulationConfig
+from core.output_manager import OutputManager
 
 from gui.theme_manager import ThemeManager
 from gui.compare_view import CompareView
@@ -64,6 +69,7 @@ class MainWindow(QMainWindow):
         self._exe_path = ""
         self._last_elapsed = 0.0
         self._last_csv_path = ""
+        self._current_run_folder = None
 
         # Theme Manager
         self._theme_mgr = ThemeManager(parent=self)
@@ -71,6 +77,7 @@ class MainWindow(QMainWindow):
         # Managers
         self._history_mgr = HistoryManager()
         self._report_gen = ReportGenerator()
+        self._output_mgr = OutputManager(Path.cwd())
 
         self._init_ui()
         self._load_settings()
@@ -180,10 +187,45 @@ class MainWindow(QMainWindow):
         self._control_panel.demoClicked.connect(self._on_demo_requested)
         self._control_panel.sweepClicked.connect(self._on_sweep_requested)
         self._control_panel.browseClicked.connect(self._on_browse_requested)
+        self._control_panel.saveConfigRequested.connect(self._on_save_config)
+        self._control_panel.loadConfigRequested.connect(self._on_load_config)
+
+        # Inspector Panel
+        self._inspector_panel.downloadClicked.connect(self._on_download_requested)
 
         # History Panel
         self._history_panel.reloadRequested.connect(self._on_history_reload)
         self._history_panel.compareRequested.connect(self._on_compare_requested)
+
+    # -- Configuration Handlers -------------------------------------
+
+    def _on_save_config(self) -> None:
+        path, _ = QFileDialog.getSaveFileName(self, "Save Simulation Configuration", "", "JSON Config (*.json)")
+        if not path:
+            return
+        
+        vals = self._control_panel.get_form_values()
+        config = SimulationConfig(self._exe_path, vals["start_time"], vals["stop_time"])
+        if ConfigManager.save_config(config.to_dict(), Path(path)):
+            self._log(f"Configuration saved to {Path(path).name}", LogLevel.SUCCESS)
+        else:
+            QMessageBox.critical(self, "Save Error", "Failed to save configuration file.")
+
+    def _on_load_config(self) -> None:
+        path, _ = QFileDialog.getOpenFileName(self, "Open Simulation Configuration", "", "JSON Config (*.json)")
+        if not path:
+            return
+        
+        data = ConfigManager.load_config(Path(path))
+        if data:
+            config = SimulationConfig.from_dict(data)
+            if config.exe_path and Path(config.exe_path).exists():
+                self._exe_path = config.exe_path
+                self._control_panel.update_exe_path(config.exe_path)
+            self._control_panel.set_form_values(config.start_time, config.stop_time)
+            self._log(f"Configuration loaded from {Path(path).name}", LogLevel.INFO)
+        else:
+            QMessageBox.critical(self, "Load Error", "Failed to load configuration or file is invalid.")
 
     # -- Event Handlers ---------------------------------------------
 
@@ -219,6 +261,10 @@ class MainWindow(QMainWindow):
         self._plot_panel.reset()
         self._update_status("Running Simulation...", "#d29922")
         self._last_elapsed = 0.0
+        self._inspector_panel.update_insight("Running...")
+
+        # Organization: Create run folder
+        self._current_run_folder = self._output_mgr.make_run_folder()
 
         self._runner = SimulationRunner(self._exe_path, start, stop, parent=self)
         self._runner.stdout_ready.connect(lambda l: self._console_panel.append_text(self._logger.format_entry(l, LogLevel.OUTPUT)))
@@ -243,10 +289,32 @@ class MainWindow(QMainWindow):
         self._inspector_panel.update_status(status, color)
         self._log(f"Simulation {status.lower()} with code {return_code}", LogLevel.SUCCESS if return_code == 0 else LogLevel.ERROR)
 
-        # Detect files
-        exe_dir = str(Path(self._exe_path).parent)
-        gen_files = scan_result_files(exe_dir, smart_filter=True)
+        # Organization: Move files to run folder and scan
+        exe_dir = Path(self._exe_path).parent
+        gen_files = scan_result_files(str(exe_dir), smart_filter=True)
+        
+        if self._current_run_folder:
+            for rf in gen_files:
+                try:
+                    dest = self._current_run_folder / Path(rf.full_path).name
+                    # Move if not already there (which it isn't yet)
+                    import shutil
+                    shutil.move(rf.full_path, dest)
+                    rf.full_path = str(dest) # Update path in FileInfo
+                except OSError: pass
+            
+            # Re-scan in run folder
+            gen_files = scan_result_files(str(self._current_run_folder), smart_filter=False)
+
         self._inspector_panel.update_files_list(gen_files)
+
+        # Quick Insight
+        insight = f"Simulation {status.lower()} in {self._last_elapsed:.2f}s. "
+        if gen_files:
+            insight += f"Found {len(gen_files)} output files."
+        else:
+            insight += "No result files detected."
+        self._inspector_panel.update_insight(insight)
 
         # Add to history
         self._history_mgr.add(
@@ -268,6 +336,7 @@ class MainWindow(QMainWindow):
         self._set_running_state(False)
         self._update_status("Error", "#f85149")
         self._inspector_panel.update_status("Error", "#f85149")
+        self._inspector_panel.update_insight(f"Error: {message}")
         self._log(message, LogLevel.ERROR)
 
     def _on_stop_requested(self) -> None:
@@ -276,6 +345,37 @@ class MainWindow(QMainWindow):
             self._runner.terminate()
             self._log("Simulation aborted by user.", LogLevel.WARNING)
             self._set_running_state(False)
+
+    def _on_download_requested(self) -> None:
+        """Export results to a chosen folder or ZIP."""
+        if not self._current_run_folder:
+            return
+        
+        files = [p for p in self._current_run_folder.iterdir() if p.is_file()]
+        if not files:
+            QMessageBox.information(self, "Export results", "No result files were found for this run.")
+            return
+
+        choice = QMessageBox.question(self, "Export Results", "Would you like to export as a ZIP archive?", 
+                                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Cancel)
+        
+        if choice == QMessageBox.StandardButton.Cancel:
+            return
+
+        if choice == QMessageBox.StandardButton.Yes:
+            path, _ = QFileDialog.getSaveFileName(self, "Export as ZIP", "simulation_results.zip", "ZIP Archive (*.zip)")
+            if path:
+                if ExportManager.create_zip(files, Path(path)):
+                    self._log(f"Results zipped to {Path(path).name}", LogLevel.SUCCESS)
+                else:
+                    QMessageBox.warning(self, "Export Error", "Failed to create ZIP archive.")
+        else:
+            path = QFileDialog.getExistingDirectory(self, "Select Export Directory")
+            if path:
+                if ExportManager.copy_results(files, Path(path)):
+                    self._log(f"Results exported to {Path(path).name}", LogLevel.SUCCESS)
+                else:
+                    QMessageBox.warning(self, "Export Error", "Failed to copy result files.")
 
     # -- Sweep Logic ------------------------------------------------
 
@@ -287,6 +387,7 @@ class MainWindow(QMainWindow):
         self._set_running_state(True)
         self._console_panel.clear()
         self._update_status(f"Running Sweep (0/{len(stops)})...", "#8957e5")
+        self._inspector_panel.update_insight("Running Parameter Sweep...")
         
         self._sweep_runner = SweepRunner(self._exe_path, start, stops, parent=self)
         self._sweep_runner.run_stdout.connect(self._console_panel.append_text)
@@ -311,6 +412,7 @@ class MainWindow(QMainWindow):
         self._set_running_state(False)
         self._update_status("Sweep Completed", "#3fb950")
         self._log("Parameter sweep completed.", LogLevel.SUCCESS)
+        self._inspector_panel.update_insight(f"Sweep completed with {len(results)} runs.")
 
     # -- Analysis ---------------------------------------------------
 

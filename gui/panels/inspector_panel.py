@@ -6,13 +6,14 @@ Status cards and detailed informational lists.
 
 from pathlib import Path
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QGroupBox,
     QHBoxLayout,
     QLabel,
     QListWidget,
     QListWidgetItem,
+    QPushButton,
     QVBoxLayout,
     QWidget,
 )
@@ -20,6 +21,8 @@ from PyQt6.QtWidgets import (
 
 class InspectorPanel(QWidget):
     """Right sidebar for simulation status and output file inspection."""
+
+    downloadClicked = pyqtSignal()
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
@@ -54,6 +57,13 @@ class InspectorPanel(QWidget):
         self._exec_time_label.setObjectName("inspectorDetail")
         status_layout.addWidget(self._exec_time_label)
 
+        # Quick Insight Label
+        self._insight_label = QLabel("")
+        self._insight_label.setObjectName("insightLabel")
+        self._insight_label.setWordWrap(True)
+        self._insight_label.setStyleSheet("font-style: italic; color: #969696; font-size: 11px;")
+        status_layout.addWidget(self._insight_label)
+
         layout.addWidget(status_group)
 
         # -- Current Setup Info --
@@ -81,6 +91,13 @@ class InspectorPanel(QWidget):
         self._files_list.setObjectName("inspectorFilesList")
         self._files_list.setToolTip("Click to view file details")
         files_layout.addWidget(self._files_list)
+
+        # Download Button
+        self._download_btn = QPushButton("\u2913  Download Results")
+        self._download_btn.setObjectName("downloadBtn")
+        self._download_btn.setEnabled(False)
+        self._download_btn.clicked.connect(self.downloadClicked.emit)
+        files_layout.addWidget(self._download_btn)
         
         layout.addWidget(files_group)
 
@@ -98,9 +115,14 @@ class InspectorPanel(QWidget):
         self._params_label.setText(f"Start: {start} | Stop: {stop}")
         self._exe_name_label.setText(f"Executable: {Path(exe_path).name if exe_path else '---'}")
 
+    def update_insight(self, message: str) -> None:
+        """Update the quick insight text."""
+        self._insight_label.setText(message)
+
     def update_files_list(self, files: list) -> None:
         """Populate the generated files list."""
         self._files_list.clear()
+        self._download_btn.setEnabled(len(files) > 0)
         for rf in files:
             item = QListWidgetItem(f" \U0001f4c4 {rf.name}")
             item.setToolTip(f"{rf.full_path} ({rf.size_display})")

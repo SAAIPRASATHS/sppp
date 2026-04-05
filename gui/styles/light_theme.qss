@@ -403,16 +403,30 @@ QPushButton:disabled {
     border-color: #DDDDDD;
 }
 
-/* Plot / Compare action buttons */
-#workspacePlotBtn, #compareBtn {
+#workspacePlotBtn, #compareBtn, #downloadBtn {
     background: #0066CC;
     color: #FFFFFF;
     font-weight: 600;
     border: none;
+    margin-top: 5px;
 }
 
-#workspacePlotBtn:hover, #compareBtn:hover {
+#workspacePlotBtn:hover, #compareBtn:hover, #downloadBtn:hover {
     background: #0077E6;
+}
+
+#sidebarConfigBtn {
+    background: #EEEEEE;
+    color: #555555;
+    border: 1px solid #CCCCCC;
+    font-size: 11px;
+    padding: 4px 8px;
+}
+
+#sidebarConfigBtn:hover {
+    background: #E8E8E8;
+    border-color: #0066CC;
+    color: #222222;
 }
 
 /* ============================================================
