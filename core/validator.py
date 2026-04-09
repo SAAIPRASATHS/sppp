@@ -1,8 +1,11 @@
 """
-Input validation logic for OpenModelica Simulation Runner.
+Input validation logic for OpenModelica Simulation Studio.
 
-Validates simulation parameters (start time, stop time) and
-executable file selection before allowing execution.
+This module provides strict validation rules for simulation parameters and
+file paths. It ensures that only valid data is passed to the execution engine,
+preventing runtime crashes and ensuring adherence to fellowship requirements.
+
+Author: FOSSEE Summer Fellowship 2026 Submission
 """
 
 from dataclasses import dataclass
@@ -10,20 +13,31 @@ from dataclasses import dataclass
 
 @dataclass
 class ValidationResult:
-    """Holds the outcome of a validation check."""
+    """
+    Data structure representing the outcome of a validation operation.
+
+    Attributes:
+        is_valid (bool): True if the validation passed, False otherwise.
+        message (str): Human-readable feedback explaining the result.
+    """
     is_valid: bool
     message: str
 
 
 class SimulationValidator:
-    """Validates simulation parameters against OpenModelica constraints.
+    """
+    Validates simulation parameters against OpenModelica and project constraints.
 
-    Rules:
-        - Start time must be an integer >= 0
-        - Stop time must be an integer > start time
-        - Both must satisfy: 0 <= start < stop < 5
+    The validation ensures that time steps are logically sound and stay within
+    the predefined bounds required by the screening task.
+
+    Constraints:
+        - Start time (int): Required to be non-negative (≥ 0).
+        - Stop time (int): Required to be greater than start time.
+        - Fellowship Limit: Both values must be less than 5.
     """
 
+    # Constants defining the allowed simulation duration range
     MIN_TIME = 0
     MAX_TIME_EXCLUSIVE = 5
 
