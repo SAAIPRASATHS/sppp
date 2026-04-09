@@ -52,13 +52,22 @@ _SETTINGS_FILE = Path(__file__).resolve().parent.parent / ".sim_settings.json"
 
 
 class MainWindow(QMainWindow):
-    """Primary application window for Simulation Studio (v5.0).
+    """
+    The orchestrator of the OpenModelica Simulation Studio.
 
-    Multi-panel Layout:
-    - Sidebar (Left): Control & Setup
-    - Workspace (Center): Visualization & Terminal
-    - Inspector (Right): Details & Status
-    - Toolbar (Top): Action items + Theme toggle
+    This class serves as the central hub of the application, coordinating
+    interactions between the UI panels and the core simulation engines. It
+    manages the application lifecycle, including thread management, theme
+    persistence, and project-wide configuration.
+
+    Architecture:
+    - Sidebar (Left): Houses ControlPanel and HistoryPanel for input and review.
+    - Workspace (Center): Hosts PlotPanel and ConsolePanel using a vertical splitter.
+    - Inspector (Right): Displays real-time metrics and file information.
+
+    Signal Processing:
+    - Facilitates communication between decoupled panels via internal Qt slots.
+    - Handles asynchronous feedback from SimulationRunner and SweepRunner threads.
     """
 
     def __init__(self) -> None:
