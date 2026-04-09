@@ -280,15 +280,33 @@ class CompareView(QWidget):
             self._x_combo.addItems(shared_cols)
             self._y_combo.addItems(shared_cols)
 
-            for tc_name in ("time", "Time", "TIME", "t"):
+            # Aggressive auto-select "time" for X if available
+            found_x = False
+            time_variants = ("time", "t", "Time", "TIME", "t (s)", "time (s)", "Time [s]")
+            
+            # Exact matching first
+            for tc_name in time_variants:
                 if tc_name in shared_cols:
-                    self._x_combo.setCurrentIndex(
-                        shared_cols.index(tc_name)
-                    )
+                    self._x_combo.setCurrentIndex(shared_cols.index(tc_name))
+                    found_x = True
                     break
+            
+            # Substring matching if still not found
+            if not found_x:
+                for idx, col in enumerate(shared_cols):
+                    if "time" in col.lower() or col.lower() == "t":
+                        self._x_combo.setCurrentIndex(idx)
+                        found_x = True
+                        break
 
+            # Y defaults to something different from X
             if len(shared_cols) > 1:
-                y_idx = 1 if self._x_combo.currentIndex() == 0 else 0
+                x_idx = self._x_combo.currentIndex()
+                # Try to pick a column that is NOT X
+                y_idx = 1 if x_idx == 0 else 0
+                # If there are many columns, avoid picking 'time' for Y too
+                if len(shared_cols) > 2 and y_idx == x_idx:
+                    y_idx = 2
                 self._y_combo.setCurrentIndex(y_idx)
 
             self._status_label.setText(

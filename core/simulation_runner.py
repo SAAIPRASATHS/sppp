@@ -101,21 +101,36 @@ class SimulationRunner(QThread):
                 cwd=str(self._executable.parent),
             )
 
-            # Stream stdout line-by-line in real time
+            import threading
+
+            def stream_reader(pipe, signal):
+                try:
+                    with pipe:
+                        for line in iter(pipe.readline, ""):
+                            stripped = line.rstrip("\n\r")
+                            if stripped:
+                                signal.emit(stripped)
+                except Exception:
+                    pass
+
+            # Start stderr reader in a background thread
+            stderr_thread = threading.Thread(
+                target=stream_reader,
+                args=(process.stderr, self.stderr_ready),
+                daemon=True
+            )
+            stderr_thread.start()
+
+            # Read stdout in this thread
             if process.stdout:
-                for line in process.stdout:
+                for line in iter(process.stdout.readline, ""):
                     stripped = line.rstrip("\n\r")
                     if stripped:
                         self.stdout_ready.emit(stripped)
 
-            # Stream stderr line-by-line
-            if process.stderr:
-                for line in process.stderr:
-                    stripped = line.rstrip("\n\r")
-                    if stripped:
-                        self.stderr_ready.emit(stripped)
-
             return_code = process.wait()
+            stderr_thread.join(timeout=1.0) # Ensure stderr is flushed
+            
             self._elapsed = time.perf_counter() - start_wall
             self.execution_time.emit(self._elapsed)
             self.finished_signal.emit(return_code)
