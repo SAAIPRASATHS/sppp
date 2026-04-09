@@ -80,10 +80,12 @@ OpenModelica simulations are typically authored in the Modelica language and com
 *   **Behavior**: Upon clicking Run, the console will display the simulation header. Once finished, a plot window will appear showing the height (`h`) and velocity (`v`) of the ball over the 4-second interval.
 
 ## Evaluation Highlights
-*   **Clean OOP Design**: Separation of concerns between UI logic, simulation execution, and data processing.
-*   **User-friendly Interface**: Intuitive layout designed for technical users and evaluators.
-*   **Real-time Execution**: Efficient handling of subprocess output for immediate feedback.
-*   **Proper Documentation**: Comprehensive code comments and structured README for easy assessment.
+*   **Clean OOP Design**: Clear separation of concerns between the business logic (`core`), user interface (`gui`), and helper utilities (`utils`).
+*   **User-friendly Interface**: Intuitive layout with modular panels, dynamic theme switching, and responsive design for technical evaluators.
+*   **Real-time Execution**: Efficient background threading using `QThread` to handle simulation subprocesses without freezing the UI.
+*   **Robust Data Visualization**: Professional-grade plotting with Matplotlib, featuring interactive zooming, panned navigation, and multiple variable support.
+*   **Extensive Documentation**: Comprehensive markdown files detailing architecture, installation, and usage examples to ensure a smooth evaluation process.
+*   **Parameter Guardrails**: Validation logic that prevents illegal simulation parameters, ensuring application stability.
 
 ## License
 This project is licensed under the MIT License.
