@@ -1,0 +1,19 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Handle Python files
+*.py text eol=lf
+*.qss text eol=lf
+
+# Handle documentation
+*.md text eol=lf
+LICENSE text eol=lf
+
+# Explicitly declare binary files
+*.exe binary
+*.dll binary
+*.so binary
+*.mat binary
+*.png binary
+*.jpg binary
+*.jpeg binary
