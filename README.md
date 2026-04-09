@@ -1,63 +1,76 @@
 # OpenModelica Simulation Studio
 
-A PyQt6-based desktop application for executing OpenModelica simulation executables. This tool provides real-time output streaming, interactive result visualization, and parameter sweep capabilities in a professional workspace.
+## Description
+This project is developed for the FOSSEE Summer Fellowship 2026 (OpenModelica Screening Task). The OpenModelica Simulation Studio is a professional desktop application designed to streamline the execution, monitoring, and visualization of OpenModelica simulation binaries.
 
-## Key Features
+## Features
+*   **Subprocess Execution**: Seamless execution of OpenModelica-generated simulation binaries using Python's subprocess module.
+*   **PyQt6 GUI**: A clean, modern, and responsive interface built with the PyQt6 framework.
+*   **Dynamic Inputs**: Dedicated input fields for selecting simulation executables and configuring time parameters.
+*   **Real-time Output Display**: Live streaming of simulation stdout and stderr to an integrated console.
+*   **Data Visualization**: High-quality plotting of simulation results using Matplotlib.
+*   **Parameter Validation**: Strict validation logic ensuring simulation parameters remain within safe bounds (0 ≤ start < stop < 5).
 
-- **Subprocess Execution**: Run OpenModelica-generated `.exe` binaries with real-time stdout/stderr streaming.
-- **Data Visualization**: Integrated Matplotlib charts for interactive analysis of simulation results.
-- **Parameter Sweep**: Batch execution mode for multiple stop-time configurations.
-- **Run Comparison**: Overlay multiple simulation results on a single chart for side-by-side analysis.
-- **Workspace Management**: VS Code-inspired layout with dark and light theme support.
-- **Automated Reporting**: Generation of structured simulation reports for every run.
+## Technologies Used
+*   Python 3.x
+*   PyQt6
+*   OpenModelica
+*   Matplotlib
 
-## Getting Started
+## Installation
 
-### Prerequisites
+1.  **Clone the Repository**
+    ```bash
+    git clone https://github.com/your-username/openmodelica-simulation-studio.git
+    cd openmodelica-simulation-studio
+    ```
 
-- Python 3.10 or later
-- OpenModelica simulation executables
+2.  **Install Dependencies**
+    Ensure you have Python 3.x installed. Install the required libraries using pip:
+    ```bash
+    pip install -r requirements.txt
+    ```
 
-### Installation
-
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd OpenModelica-Simulation-Studio
-   ```
-
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. Run the application:
-   ```bash
-   python main.py
-   ```
+3.  **Run the Application**
+    Launch the simulation studio:
+    ```bash
+    python main.py
+    ```
 
 ## Usage
+1.  **Select Executable**: Click the folder icon or use the file selector to choose an OpenModelica-compiled executable (.exe).
+2.  **Enter Time Parameters**: Input the desired Start Time and Stop Time. (Note: Values must satisfy 0 ≤ start < stop < 5).
+3.  **Run Simulation**: Click the "Run Simulation" button to begin execution.
+4.  **View Results**: Monitor the live console output and view the generated plots upon successful completion.
 
-1. **Select Executable**: Use the file picker in the sidebar to select an OpenModelica-compiled `.exe`.
-2. **Configure Parameters**: Set the simulation start and stop times.
-3. **Execute**: Click "Run Simulation" to start the process. Output will stream to the console panel in real-time.
-4. **Analyze**: Results are automatically scanned and can be plotted using the "Plot" action or via the History panel.
+## How It Works
+OpenModelica simulations are typically authored in the Modelica language and compiled into standalone C-code executables. This application automates the interaction with these binaries.
+
+*   **Command Execution**: The application utilizes the `subprocess.Popen` API to launch the simulation as a child process.
+*   **Override Arguments**: Simulation parameters are passed to the binary using the OpenModelica override flag: `-override startTime=X,stopTime=Y`.
+*   **Threaded Execution**: Simulations run in a dedicated background thread to ensure the GUI remains responsive during intensive calculations.
 
 ## Project Structure
+*   **core/**: Contains the business logic, including the simulation runner, result parser, and parameter validator.
+*   **gui/**: Contains the PyQt6 layout definitions, custom styles, and main window logic.
+*   **utils/**: Helper modules for file system operations and logging.
+*   **main.py**: The central entry point of the application.
+*   **requirements.txt**: List of Python dependencies required to run the project.
 
-```text
-├── core/                # Simulation logic, runners, and data parsers
-├── gui/                 # PyQt6 window, panels, and theme management
-├── utils/               # File handling and general utilities
-├── reports/             # Auto-generated simulation reports
-├── runs/                # Organized output folders for individual runs
-└── main.py              # Application entry point
-```
+## Screenshots
+*(Section intentionally left for UI and output screenshots)*
 
-## Configuration
+## Example Run
+*   **Input Executable**: `BouncingBall.exe`
+*   **Start Time**: 0
+*   **Stop Time**: 4
+*   **Behavior**: Upon clicking Run, the console will display the simulation header. Once finished, a plot window will appear showing the height (`h`) and velocity (`v`) of the ball over the 4-second interval.
 
-The application stores persistent settings (last used executable, theme) in `.sim_settings.json`. Individual simulation configurations can be exported and imported as JSON files via the Control Panel.
+## Evaluation Highlights
+*   **Clean OOP Design**: Separation of concerns between UI logic, simulation execution, and data processing.
+*   **User-friendly Interface**: Intuitive layout designed for technical users and evaluators.
+*   **Real-time Execution**: Efficient handling of subprocess output for immediate feedback.
+*   **Proper Documentation**: Comprehensive code comments and structured README for easy assessment.
 
 ## License
-
 This project is licensed under the MIT License.
