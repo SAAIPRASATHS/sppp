@@ -87,5 +87,11 @@ OpenModelica simulations are typically authored in the Modelica language and com
 *   **Extensive Documentation**: Comprehensive markdown files detailing architecture, installation, and usage examples to ensure a smooth evaluation process.
 *   **Parameter Guardrails**: Validation logic that prevents illegal simulation parameters, ensuring application stability.
 
+## Troubleshooting
+- **Simulation Fails to Start**: Verify that the selected file is indeed a compiled OpenModelica executable and that it has the necessary permissions to run.
+- **Missing Results**: Ensure the simulation runs long enough (at least 0.1s) and that the model generates output variables. Check the `runs/` directory for any raw data files.
+- **UI Lag**: The application is designed to be responsive, but extremely large simulation outputs may take a few moments to parse and plot.
+- **Installation Issues**: Refer to the [Installation Guide](docs/installation_guide.md) for detailed environment setup instructions.
+
 ## License
 This project is licensed under the MIT License.
