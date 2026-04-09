@@ -14,25 +14,17 @@ from PyQt6.QtCore import QThread, pyqtSignal
 
 
 class SimulationRunner(QThread):
-    """
-    Background worker for executing OpenModelica simulation binaries.
+    """Runs an OpenModelica executable in a background thread.
 
-    This class encapsulates the subprocess logic required to run a compiled
-    Modelica model. It uses QThread to avoid blocking the main GUI thread,
-    ensuring a smooth user experience even during long-running simulations.
-
-    Key Responsibilities:
-    - Construct the command-line arguments including override flags.
-    - Manage the subprocess lifecycle using `subprocess.Popen`.
-    - Facilitate real-time communication with the GUI via Qt Signals.
-    - Measure and report total execution (wall-clock) time.
+    Emits signals for stdout lines, stderr lines, completion,
+    execution time, and errors so the GUI can update in real time.
 
     Signals:
-        stdout_ready (str): Emitted for each new line captured from the process stdout.
-        stderr_ready (str): Emitted for each new line captured from the process stderr.
-        finished_signal (int): Emitted when the process terminates, providing the exit code.
-        error_occurred (str): Emitted for system-level errors (e.g., file not found).
-        execution_time (float): Emitted on completion with the total duration in seconds.
+        stdout_ready: Emitted for each line of standard output.
+        stderr_ready: Emitted for each line of standard error.
+        finished_signal: Emitted when process completes (return code).
+        error_occurred: Emitted if the process fails to start.
+        execution_time: Emitted with elapsed seconds on completion.
     """
 
     stdout_ready = pyqtSignal(str)

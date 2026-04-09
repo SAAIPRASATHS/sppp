@@ -1,17 +1,9 @@
 """
-Result file detection and CSV parsing for OpenModelica simulation output.
+Result file detection and CSV parsing for simulation output.
 
-This module simplifies the process of discovering and loading simulation results.
-It handles various file formats, uses smart sniffing to detect CSV dialects,
-and employs memory-efficient parsing to provide quick previews of large data sets.
-
-Key Features:
-- Smart Filering: Automatically excludes non-numeric CSV files using data probing.
-- Memory Efficiency: Loads only essential rows for UI previews and plotting.
-- Dialect Agnostic: Uses Python's `csv.Sniffer` to adapt to different delimiter types.
-- Plot Readiness: Identifies numeric columns suitable for visualization.
-
-Author: FOSSEE Summer Fellowship 2026 Submission
+Scans directories for output files (.csv, .mat) and provides
+efficient CSV preview with limited row loading. Includes smart
+detection to filter non-simulation data files.
 """
 
 import csv

@@ -1,18 +1,5 @@
 # OpenModelica Simulation Studio
 
-## Table of Contents
-- [Description](#description)
-- [Features](#features)
-- [Technologies Used](#technologies-used)
-- [Installation](#installation)
-- [Usage](#usage)
-- [How It Works](#how-it-works)
-- [Project Structure](#project-structure)
-- [Screenshots](#screenshots)
-- [Example Run](#example-run)
-- [Evaluation Highlights](#evaluation-highlights)
-- [License](#license)
-
 ## Description
 This project is developed for the FOSSEE Summer Fellowship 2026 (OpenModelica Screening Task). The OpenModelica Simulation Studio is a professional desktop application designed to streamline the execution, monitoring, and visualization of OpenModelica simulation binaries.
 
@@ -80,18 +67,10 @@ OpenModelica simulations are typically authored in the Modelica language and com
 *   **Behavior**: Upon clicking Run, the console will display the simulation header. Once finished, a plot window will appear showing the height (`h`) and velocity (`v`) of the ball over the 4-second interval.
 
 ## Evaluation Highlights
-*   **Clean OOP Design**: Clear separation of concerns between the business logic (`core`), user interface (`gui`), and helper utilities (`utils`).
-*   **User-friendly Interface**: Intuitive layout with modular panels, dynamic theme switching, and responsive design for technical evaluators.
-*   **Real-time Execution**: Efficient background threading using `QThread` to handle simulation subprocesses without freezing the UI.
-*   **Robust Data Visualization**: Professional-grade plotting with Matplotlib, featuring interactive zooming, panned navigation, and multiple variable support.
-*   **Extensive Documentation**: Comprehensive markdown files detailing architecture, installation, and usage examples to ensure a smooth evaluation process.
-*   **Parameter Guardrails**: Validation logic that prevents illegal simulation parameters, ensuring application stability.
-
-## Troubleshooting
-- **Simulation Fails to Start**: Verify that the selected file is indeed a compiled OpenModelica executable and that it has the necessary permissions to run.
-- **Missing Results**: Ensure the simulation runs long enough (at least 0.1s) and that the model generates output variables. Check the `runs/` directory for any raw data files.
-- **UI Lag**: The application is designed to be responsive, but extremely large simulation outputs may take a few moments to parse and plot.
-- **Installation Issues**: Refer to the [Installation Guide](docs/installation_guide.md) for detailed environment setup instructions.
+*   **Clean OOP Design**: Separation of concerns between UI logic, simulation execution, and data processing.
+*   **User-friendly Interface**: Intuitive layout designed for technical users and evaluators.
+*   **Real-time Execution**: Efficient handling of subprocess output for immediate feedback.
+*   **Proper Documentation**: Comprehensive code comments and structured README for easy assessment.
 
 ## License
 This project is licensed under the MIT License.

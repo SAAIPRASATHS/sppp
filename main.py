@@ -1,13 +1,8 @@
 """
-OpenModelica Simulation Studio — Application Entry Point.
+OpenModelica Simulation Runner — Entry Point.
 
-This module serves as the primary entry point for the Simulation Studio.
-It initializes the Qt application environment, sets project metadata,
-and launches the main graphical interface.
-
-Application: OpenModelica Simulation Studio
-Framework: PyQt6
-Author: FOSSEE Summer Fellowship 2026 Submission
+Launches the PyQt6 desktop application for executing
+OpenModelica-generated simulation executables.
 """
 
 import sys
@@ -18,13 +13,7 @@ from gui.main_window import MainWindow
 
 
 def main() -> None:
-    """
-    Initialize the application, configure global settings, and show the main window.
-
-    This function sets up the QApplication instance, which manages the application's
-    control flow and main settings. It then instantiates the MainWindow and enters
-    the main event loop.
-    """
+    """Initialize the application and show the main window."""
     app = QApplication(sys.argv)
     app.setApplicationName("OpenModelica Simulation Runner")
     app.setApplicationVersion("1.0.0")
