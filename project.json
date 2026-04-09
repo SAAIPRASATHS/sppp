@@ -1,0 +1,20 @@
+{
+  "name": "OpenModelica Simulation Studio",
+  "version": "5.0.0",
+  "description": "Professional PyQt6 desktop application for executing and analyzing OpenModelica simulations",
+  "main": "main.py",
+  "python_version": ">=3.10",
+  "dependencies": {
+    "PyQt6": ">=6.6.0",
+    "matplotlib": ">=3.8.0"
+  },
+  "keywords": [
+    "openmodelica",
+    "simulation",
+    "pyqt6",
+    "desktop-app",
+    "data-visualization",
+    "matplotlib"
+  ],
+  "license": "MIT"
+}

@@ -8,21 +8,35 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+*.egg-info/
+dist/
+build/
 
-# Project specific
+# Project runtime files (generated during simulation)
 .sim_settings.json
-*.csv
+.run_history.json
 *.log
-*.plt
-*.mat
-*.xml
-*.exe
+error.log
+
+# Simulation output files (generated at runtime, not source)
+runs/
+reports/
+
+# Binary artifacts
 *.o
 *.obj
 *.dll
 *.so
 
-# IDE
+# IDE & Editor
 .vscode/
 .idea/
 .gemini/
+*.swp
+*.swo
+*~
+
+# OS
+Thumbs.db
+.DS_Store
+desktop.ini
