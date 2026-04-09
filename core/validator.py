@@ -78,7 +78,10 @@ class SimulationValidator:
 
     @staticmethod
     def validate_file_path(path: str) -> ValidationResult:
-        """Validate that a file path has been selected.
+        """Validate that a valid executable file path has been selected.
+
+        Supports both Windows (.exe) and Linux/macOS (extensionless
+        binaries with execute permission).
 
         Args:
             path: The executable file path string.
@@ -87,5 +90,40 @@ class SimulationValidator:
             ValidationResult with status and descriptive message.
         """
         if not path or not path.strip():
-            return ValidationResult(False, "No executable file selected. Please choose a file.")
-        return ValidationResult(True, "File path is set.")
+            return ValidationResult(
+                False,
+                "No executable file selected. Please choose a file.",
+            )
+
+        from pathlib import Path
+        import platform
+        import os
+
+        file_path = Path(path)
+
+        if not file_path.exists():
+            return ValidationResult(False, f"File does not exist: {path}")
+
+        if not file_path.is_file():
+            return ValidationResult(
+                False, "The selected path is a directory, not a file."
+            )
+
+        # Platform-specific executable checks
+        if platform.system() == "Windows":
+            if file_path.suffix.lower() != ".exe":
+                return ValidationResult(
+                    False,
+                    f"Invalid file type: '{file_path.suffix}'. "
+                    "Please select a Windows executable (.exe).",
+                )
+        else:
+            # Linux / macOS — check execute permission
+            if not os.access(file_path, os.X_OK):
+                return ValidationResult(
+                    False,
+                    "The selected file does not have execute permission. "
+                    "Run: chmod +x <file>",
+                )
+
+        return ValidationResult(True, "File path is valid.")

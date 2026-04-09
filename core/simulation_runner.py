@@ -136,6 +136,10 @@ class SimulationRunner(QThread):
         except OSError as exc:
             self._elapsed = time.perf_counter() - start_wall
             self.execution_time.emit(self._elapsed)
-            self.error_occurred.emit(
-                f"OS error while running simulation: {exc}"
-            )
+            msg = f"Execution failed: {exc}"
+            if "WinError 193" in str(exc):
+                msg = (
+                    "Error [WinError 193]: The selected file is not a valid executable. "
+                    "Please ensure you've selected a binary simulation file, not a script or data file."
+                )
+            self.error_occurred.emit(msg)

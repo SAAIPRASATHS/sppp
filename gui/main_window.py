@@ -49,6 +49,7 @@ from utils.file_handler import select_executable, inspect_file, FileInfo
 
 # Settings
 _SETTINGS_FILE = Path(__file__).resolve().parent.parent / ".sim_settings.json"
+_MODEL_DIR = Path(__file__).resolve().parent.parent / "model"
 
 
 class MainWindow(QMainWindow):
@@ -81,6 +82,7 @@ class MainWindow(QMainWindow):
 
         self._init_ui()
         self._load_settings()
+        self._auto_load_model()
         self._apply_theme()
         self._update_status("Ready", "#3fb950")
 
@@ -239,8 +241,9 @@ class MainWindow(QMainWindow):
             self._save_settings()
 
     def _on_run_requested(self, start, stop) -> None:
-        if not self._exe_path:
-            QMessageBox.warning(self, "No Executable", "Please select a simulation executable first.")
+        validation = SimulationValidator.validate_file_path(self._exe_path)
+        if not validation.is_valid:
+            QMessageBox.warning(self, "Invalid Executable", validation.message)
             return
         self._execute_simulation(start, stop)
 
@@ -249,8 +252,9 @@ class MainWindow(QMainWindow):
         self._control_panel._run_btn.click()
 
     def _on_demo_requested(self) -> None:
-        if not self._exe_path:
-            QMessageBox.warning(self, "No Executable", "Please select a simulation executable first.")
+        validation = SimulationValidator.validate_file_path(self._exe_path)
+        if not validation.is_valid:
+            QMessageBox.warning(self, "Invalid Executable", validation.message)
             return
         self._execute_simulation(0, 4)
 
@@ -316,11 +320,13 @@ class MainWindow(QMainWindow):
             insight += "No result files detected."
         self._inspector_panel.update_insight(insight)
 
-        # Add to history
+        # Add to history (use actual runner params, not hardcoded)
+        runner_start = self._runner._start_time if self._runner else 0
+        runner_stop = self._runner._stop_time if self._runner else 0
         self._history_mgr.add(
             executable=Path(self._exe_path).name,
-            start_time=0, 
-            stop_time=4,
+            start_time=runner_start,
+            stop_time=runner_stop,
             status=status,
             duration=self._last_elapsed,
             return_code=return_code,
@@ -498,3 +504,39 @@ class MainWindow(QMainWindow):
                 theme = "dark" if data["dark_mode"] else "light"
             self._theme_mgr.switch_theme(theme)
         except (json.JSONDecodeError, OSError): pass
+
+    def _auto_load_model(self) -> None:
+        """Auto-detect and load an executable from the model/ directory.
+
+        If no executable has been loaded from settings, scans the
+        model/ folder for .exe files and loads the first one found.
+        This allows evaluators to run the app without manual setup.
+        """
+        if self._exe_path:
+            return  # Already loaded from settings
+
+        if not _MODEL_DIR.is_dir():
+            return
+
+        import platform
+        for candidate in sorted(_MODEL_DIR.iterdir()):
+            if not candidate.is_file():
+                continue
+            # Windows: look for .exe files
+            if platform.system() == "Windows" and candidate.suffix.lower() == ".exe":
+                self._exe_path = str(candidate.resolve())
+                break
+            # Linux/macOS: look for files without extension that are executable
+            if platform.system() != "Windows" and not candidate.suffix:
+                import os
+                if os.access(candidate, os.X_OK):
+                    self._exe_path = str(candidate.resolve())
+                    break
+
+        if self._exe_path:
+            self._control_panel.update_exe_path(self._exe_path)
+            self._log(
+                f"Auto-loaded model: {Path(self._exe_path).name}",
+                LogLevel.SUCCESS,
+            )
+            self._save_settings()

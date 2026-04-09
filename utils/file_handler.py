@@ -26,7 +26,10 @@ class FileInfo:
 
 
 def select_executable(parent: QWidget | None = None) -> str:
-    """Open a file dialog to choose an executable.
+    """Open a file dialog to choose a simulation executable.
+
+    Uses platform-appropriate filters: .exe on Windows, all files
+    on Linux/macOS.
 
     Args:
         parent: Parent widget for the dialog.
@@ -34,11 +37,18 @@ def select_executable(parent: QWidget | None = None) -> str:
     Returns:
         Absolute file path string, or empty string if cancelled.
     """
+    import platform
+
+    if platform.system() == "Windows":
+        file_filter = "Simulation Executables (*.exe)"
+    else:
+        file_filter = "All Files (*)"
+
     path, _ = QFileDialog.getOpenFileName(
         parent,
         "Select Simulation Executable",
         "",
-        "Executables (*.exe);;All Files (*)",
+        file_filter,
     )
     return path
 

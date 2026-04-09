@@ -9,8 +9,13 @@ ENV/
 env.bak/
 venv.bak/
 *.egg-info/
+
+# PyInstaller build artifacts
 dist/
+dist_*/
 build/
+build_*/
+*.spec
 
 # Project runtime files (generated during simulation)
 .sim_settings.json
@@ -21,12 +26,6 @@ error.log
 # Simulation output files (generated at runtime, not source)
 runs/
 reports/
-
-# Binary artifacts
-*.o
-*.obj
-*.dll
-*.so
 
 # IDE & Editor
 .vscode/
@@ -40,3 +39,7 @@ reports/
 Thumbs.db
 .DS_Store
 desktop.ini
+
+# NOTE: model/ directory is tracked.
+# The executable and its DLLs inside model/ are intentionally
+# committed so evaluators can run the project out-of-the-box.
