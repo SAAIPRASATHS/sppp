@@ -1,5 +1,18 @@
 # OpenModelica Simulation Studio
 
+## Table of Contents
+- [Description](#description)
+- [Features](#features)
+- [Technologies Used](#technologies-used)
+- [Installation](#installation)
+- [Usage](#usage)
+- [How It Works](#how-it-works)
+- [Project Structure](#project-structure)
+- [Screenshots](#screenshots)
+- [Example Run](#example-run)
+- [Evaluation Highlights](#evaluation-highlights)
+- [License](#license)
+
 ## Description
 This project is developed for the FOSSEE Summer Fellowship 2026 (OpenModelica Screening Task). The OpenModelica Simulation Studio is a professional desktop application designed to streamline the execution, monitoring, and visualization of OpenModelica simulation binaries.
 
